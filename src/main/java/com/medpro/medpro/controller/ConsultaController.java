@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @CrossOrigin(origins = "*")
@@ -68,8 +70,14 @@ public class ConsultaController {
 
     @GetMapping
     public ResponseEntity<Page<DadosDetalhamentoConsulta>> listar(Pageable paginacao) {
-        // Lista todas as consultas ativas (não canceladas) ou todas, dependendo da regra
-        var page = consultaRepository.findAll(paginacao).map(DadosDetalhamentoConsulta::new);
+        // Define "Hoje" como o início do dia atual (00:00)
+        // Isso garante que consultas de hoje (mesmo que cedo) apareçam, mas de ontem não.
+        var dataAtual = LocalDateTime.now().with(LocalTime.MIN);
+
+        // Busca apenas consultas ativas E a partir de hoje
+        var page = consultaRepository.findAllByMotivoCancelamentoIsNullAndDataGreaterThanEqual(paginacao, dataAtual)
+                .map(DadosDetalhamentoConsulta::new);
+        
         return ResponseEntity.ok(page);
     }
 
